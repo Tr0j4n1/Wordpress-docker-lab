@@ -42,7 +42,7 @@ This lab is intended for **local testing only** and focuses on speed, reproducib
 
 1. Clone the repository:
    ```bash
-   git clone <repo-url>
+   [git clone <repo-url>](https://github.com/Tr0j4n1/Wordpress-docker-lab.git)
    cd wordpress-docker-lab
 2. Start the environement:
    ```bash
