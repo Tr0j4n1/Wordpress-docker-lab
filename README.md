@@ -16,12 +16,15 @@ This lab is intended for **local testing only** and focuses on speed, reproducib
 ---
 
 ## Directory Structure.
-|-- docker-compose.yml
-|-- nginx
-│   └-- conf.d
-│       └-- default.conf
-└-- scripts
-    └-- wp-setup.sh
+```text
+.
+├── docker-compose.yml
+├── nginx
+│   └── conf.d
+│       └── default.conf
+└── scripts
+    └── wp-setup.sh
+```
 
 - `docker-compose.yml` – Orchestrates WordPress, database, and Nginx
 - `default.conf` – Nginx configuration used by the container
