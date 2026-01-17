@@ -52,6 +52,12 @@ This lab is intended for **local testing only** and focuses on speed, reproducib
    Admin panel: http://localhost/wp-admin
 
 Credentials and database configuration are defined directly in the Docker Compose setup for simplicity and rapid testing.
+The following are the credentials for all the users:
+1. **admin:admin@123**
+2. **author:author@123**
+3. **editor:editor@123**
+4. **subscriber:subscriber@123**
+5. **contributor:contributor@123**
 
 ## Reset Environment
 To completely reset the lab (including database and volumes):
