@@ -1,0 +1,18 @@
+# WordPress data (bind-mounted at runtime)
+wp/*
+!wp/.htaccess
+
+# wp-content is managed separately
+wp-content/
+
+# MySQL data
+mysql/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Zip archives
+*.zip

@@ -1,9 +1,9 @@
 services:
   # ───────────────────────────────────────────────
-  # MySQL 8.0  (Wordfence BBP default)
+  # MySQL 8.0
   # ───────────────────────────────────────────────
   db:
-    container_name: mysql-wpd
+    container_name: mysql-wpd-fpm
     image: mysql:8.0.20
     command: --default-authentication-plugin=mysql_native_password
     restart: always
@@ -25,66 +25,69 @@ services:
           - mysql
 
   # ───────────────────────────────────────────────
-  # WordPress  (PHP 7.4 + XDebug — custom build)
+  # WordPress  (PHP 7.4 FPM — no built-in XDebug)
+  # Use this variant when you need Nginx in front
   # ───────────────────────────────────────────────
   wordpress:
-    container_name: wordpress-wpd
+    image: wordpress:php7.4-fpm
+    container_name: wp_app_fpm
     restart: always
-    build:
-      context: ./xdebug
-      dockerfile: Dockerfile
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "80:80"
     environment:
-      WORDPRESS_DB_HOST: mysql-wpd:3306
+      WORDPRESS_DB_HOST: mysql-wpd-fpm:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
-        /* Debug ──────────────────────────────── */
         define('WP_DEBUG',         true);
         define('WP_DEBUG_LOG',     true);
         define('WP_DEBUG_DISPLAY', true);
-        /* Mailpit SMTP (via wp_mail) ──────────── */
-        define('WPMS_ON',            true);
-        define('WPMS_SMTP_HOST',     'mailpit');
-        define('WPMS_SMTP_PORT',     1025);
-        define('WPMS_MAILER',        'smtp');
-        define('WPMS_SMTP_AUTH',     false);
-        define('WPMS_SMTP_AUTOTLS',  false);
     volumes:
-      - ./wp:/var/www/html
+      - wp_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
     networks:
       - backend-wpd
-      - frontend-wpd
-    deploy:
-      resources:
-        limits:
-          memory: 2048m
     extra_hosts:
       - host.docker.internal:host-gateway
 
   # ───────────────────────────────────────────────
-  # WP-CLI automated setup  (runs once, then exits)
+  # Nginx  (reverse proxy to FPM)
+  # ───────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: wp_nginx
+    restart: always
+    depends_on:
+      - wordpress
+    ports:
+      - "80:80"
+    volumes:
+      - wp_data:/var/www/html:ro
+      - ./wp-content:/var/www/html/wp-content:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - frontend-wpd
+      - backend-wpd
+
+  # ───────────────────────────────────────────────
+  # WP-CLI setup  (runs once)
   # ───────────────────────────────────────────────
   wp-setup:
     image: wordpress:cli
-    container_name: wp_setup
+    container_name: wp_setup_fpm
     depends_on:
       db:
         condition: service_healthy
       wordpress:
         condition: service_started
     volumes:
-      - ./wp:/var/www/html
+      - wp_data:/var/www/html
       - ./wp-content:/var/www/html/wp-content
       - ./scripts:/scripts
     environment:
-      WORDPRESS_DB_HOST: mysql-wpd:3306
+      WORDPRESS_DB_HOST: mysql-wpd-fpm:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress
@@ -94,56 +97,31 @@ services:
       - backend-wpd
 
   # ───────────────────────────────────────────────
-  # WP-CLI  (ad-hoc commands: docker-compose run wpcli <cmd>)
-  # ───────────────────────────────────────────────
-  wpcli:
-    image: wordpress:cli-php8.0
-    container_name: wpcli-wpd
-    volumes:
-      - ./wp:/var/www/html
-      - ./wp-content:/var/www/html/wp-content
-    depends_on:
-      - db
-      - wordpress
-    user: "33:33"
-    entrypoint: wp
-    command: "--info"
-    environment:
-      WORDPRESS_DB_HOST: mysql-wpd:3306
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress
-      WORDPRESS_DB_NAME: wordpress
-    networks:
-      - backend-wpd
-    profiles:
-      - cli   # only starts when explicitly requested
-
-  # ───────────────────────────────────────────────
-  # Mailpit  (SMTP sink + web UI)
+  # Mailpit
   # ───────────────────────────────────────────────
   mailpit:
-    container_name: mailpit-wpd
+    container_name: mailpit-fpm
     image: axllent/mailpit:latest
     restart: always
     networks:
       - backend-wpd
       - frontend-wpd
     ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI
+      - "1025:1025"
+      - "8025:8025"
 
   # ───────────────────────────────────────────────
-  # phpMyAdmin  (DB admin UI)
+  # phpMyAdmin
   # ───────────────────────────────────────────────
   phpmyadmin:
-    container_name: phpmyadmin-wpd
+    container_name: phpmyadmin-fpm
     image: phpmyadmin:latest
     restart: always
     depends_on:
       db:
         condition: service_healthy
     environment:
-      PMA_HOST: mysql-wpd
+      PMA_HOST: mysql-wpd-fpm
       PMA_PORT: 3306
       PMA_USER: root
       PMA_PASSWORD: root
@@ -153,6 +131,7 @@ services:
       - backend-wpd
       - frontend-wpd
 
+
 # ─────────────────────────────────────────────────
 networks:
   frontend-wpd:
@@ -160,3 +139,4 @@ networks:
 
 volumes:
   db_data:
+  wp_data:
