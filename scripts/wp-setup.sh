@@ -21,13 +21,34 @@ if [ ! -f "$WP_PATH/wp-config.php" ]; then
     --skip-check
 fi
 
+# ── Disable MySQL SSL ───────────────────────────
+# wordpress:cli uses MariaDB client which fails TLS cert verification
+# against MySQL 8.0's self-signed cert. Inject MYSQL_CLIENT_FLAGS=0
+# into wp-config.php to disable SSL.
+if ! grep -q 'MYSQL_CLIENT_FLAGS' "$WP_PATH/wp-config.php" 2>/dev/null; then
+  echo "==> Patching wp-config.php to disable MySQL SSL..."
+  sed -i "/\/\* That's all, stop editing!/i\\
+/* Disable MySQL SSL for MariaDB client compatibility */\\
+define('MYSQL_CLIENT_FLAGS', 0);" "$WP_PATH/wp-config.php" 2>/dev/null || \
+  echo "define('MYSQL_CLIENT_FLAGS', 0);" >> "$WP_PATH/wp-config.php"
+fi
+
 # ── Wait for DB ─────────────────────────────────
-echo "==> Waiting for MySQL to accept queries..."
-until wp db check --path="$WP_PATH" --allow-root >/dev/null 2>&1; do
+# NOTE: We avoid `wp db check` here — it calls `mysqlcheck` which uses
+# MariaDB's CLI client that enforces TLS cert verification against MySQL
+# 8.0's self-signed cert and cannot be disabled. Instead, we just test
+# TCP connectivity, then let wp core install handle the actual DB connection
+# via PHP (where MYSQL_CLIENT_FLAGS=0 disables SSL correctly).
+DB_HOST="${WORDPRESS_DB_HOST%%:*}"
+DB_PORT="${WORDPRESS_DB_HOST##*:}"
+echo "==> Waiting for MySQL at ${DB_HOST}:${DB_PORT}..."
+until nc -z "$DB_HOST" "$DB_PORT" 2>/dev/null; do
   echo "   - DB not ready yet; retrying in 3s..."
   sleep 3
 done
-echo "   - DB is ready."
+echo "   - DB is reachable."
+# Extra wait for MySQL to finish initializing
+sleep 3
 
 # ── Core install ────────────────────────────────
 if ! wp core is-installed --path="$WP_PATH" --allow-root >/dev/null 2>&1; then
