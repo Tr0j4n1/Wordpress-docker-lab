@@ -25,7 +25,7 @@ services:
           - mysql
 
   # ───────────────────────────────────────────────
-  # WordPress  (PHP 7.4 + XDebug — custom build)
+  # WordPress  (PHP 8.3 + XDebug — custom build)
   # ───────────────────────────────────────────────
   wordpress:
     container_name: wordpress-wpd
@@ -48,6 +48,8 @@ services:
         define('WP_DEBUG',         true);
         define('WP_DEBUG_LOG',     true);
         define('WP_DEBUG_DISPLAY', true);
+        /* Disable MySQL SSL (MariaDB client compat) */
+        define('MYSQL_CLIENT_FLAGS', 0);
         /* Mailpit SMTP (via wp_mail) ──────────── */
         define('WPMS_ON',            true);
         define('WPMS_SMTP_HOST',     'mailpit');
@@ -88,6 +90,7 @@ services:
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress
+    user: "0:0"
     entrypoint: ["/bin/bash", "/scripts/wp-setup.sh"]
     restart: "no"
     networks:
@@ -97,7 +100,7 @@ services:
   # WP-CLI  (ad-hoc commands: docker-compose run wpcli <cmd>)
   # ───────────────────────────────────────────────
   wpcli:
-    image: wordpress:cli-php8.0
+    image: wordpress:cli-php8.3
     container_name: wpcli-wpd
     volumes:
       - ./wp:/var/www/html

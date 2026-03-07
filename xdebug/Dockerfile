@@ -1,4 +1,4 @@
-FROM wordpress:php7.4
+FROM wordpress:php8.3
 
 # Install packages under Debian
 RUN apt-get update && \
@@ -11,7 +11,7 @@ RUN apt-get update && \
 RUN cd /tmp && \
     git clone https://github.com/xdebug/xdebug.git && \
     cd xdebug && \
-    git checkout xdebug_3_0 && \
+    git checkout xdebug_3_3 && \
     phpize && \
     ./configure --enable-xdebug && \
     make && \
