@@ -2,7 +2,7 @@
 
 A fully automated Docker Compose environment for WordPress vulnerability research, plugin testing, and PoC development.
 
-Built for **local security research only** — features PHP 7.4 (for string deserialization viability), XDebug step-through debugging, phpMyAdmin, Mailpit, and automated multi-role user creation.
+Built for **local security research only** — features PHP 8.3 (for string deserialization viability), XDebug step-through debugging, phpMyAdmin, Mailpit, and automated multi-role user creation.
 
 ---
 
@@ -10,7 +10,7 @@ Built for **local security research only** — features PHP 7.4 (for string dese
 
 | Feature | Detail |
 |---|---|
-| **PHP 7.4 + XDebug** | Custom-built image — deserialization vulns viable; step-through debugging on port 9003 |
+| **PHP 8.3 + XDebug** | Custom-built image — deserialization vulns viable; step-through debugging on port 9003 |
 | **Automated Setup** | WP core install + 5 users (admin, author, editor, subscriber, contributor) — zero manual config |
 | **phpMyAdmin** | Full DB admin UI at `:8080` |
 | **Mailpit** | Catches all outgoing email — web UI at `:8025` |
@@ -26,10 +26,10 @@ Built for **local security research only** — features PHP 7.4 (for string dese
 ```text
 .
 ├── Makefile                    # Shortcuts for common operations
-├── docker-compose.yml          # Primary stack (Apache + PHP 7.4 + XDebug)
+├── docker-compose.yml          # Primary stack (Apache + PHP 8.3 + XDebug)
 ├── docker-compose.fpm.yml      # FPM + Nginx variant
 ├── xdebug/
-│   ├── Dockerfile              # WordPress PHP 7.4 + XDebug build
+│   ├── Dockerfile              # WordPress PHP 8.3 + XDebug build
 │   ├── files-to-copy/          # php.ini + xdebug.ini
 │   └── README.md
 ├── wp/
@@ -154,12 +154,6 @@ Useful when:
 2. Open this project in VSCode — `.vscode/launch.json` is pre-configured
 3. Start "Listen for XDebug" from the Run panel
 4. Set breakpoints in `wp/` — XDebug connects automatically on every request
-
----
-
-## Why PHP 7.4?
-
-PHP 7.4 is intentionally used because **string deserialization vulnerabilities** (e.g., `unserialize()` exploits) are viable on it. These same vulnerabilities may **not work on PHP 8+** due to stricter type handling. This makes the lab ideal for testing WordPress plugin deserialization chains.
 
 ---
 
